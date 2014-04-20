@@ -19,5 +19,6 @@ t/specs/partials.yml
 t/specs/sections.yml
 t/specs/~lambdas.yml
 lib/Mustache/Simple.pm
+lib/Mustache/Simple/ContextStack.pm
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)

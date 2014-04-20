@@ -29,14 +29,12 @@ my @skip = (
     'Indented Inline',
     'Standalone Without Newline',
     'Standalone Without Previous Line',
-    qr{Decimal Interpolation$},
-    qr{dotted name}i,
+    qr{Decimal},
     'Internal Whitespace',
     'Indented Inline Sections',
     'Standalone Line Endings',
     'Standalone Indentation',
-    'Deeply Nested Contexts',
-    qr/^Implicit Iterator/,
+    'Standalone Indented Lines',
 
 );
 

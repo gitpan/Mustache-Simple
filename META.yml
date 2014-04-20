@@ -20,4 +20,4 @@ no_index:
 requires:
   File::Spec: 0
   perl: 0
-version: v1.0.0
+version: v1.2.0
