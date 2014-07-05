@@ -4,9 +4,10 @@ use strict;
 use warnings;
 use 5.10.0;
 use utf8;
+use experimental qw(switch);
 
 # Don't forget to change the version in the pod
-our $VERSION = v1.2.1;
+our $VERSION = v1.2.3;
 
 use File::Spec;
 use Mustache::Simple::ContextStack;
@@ -27,7 +28,7 @@ See L<http://mustache.github.com/>.
 
 =head1 VERSION
 
-This document describes Mustache::Simple version 1.2.1
+This document describes Mustache::Simple version 1.2.3
 
 =head1 SYNOPSIS
 
@@ -96,13 +97,14 @@ subclassing.
 ##
 ##
 
-sub dottags($)
+sub dottags($;$)
 {
     my $tag = shift;
+    my $type = shift // '';
     my @dots = $tag =~ /(.*?)\.(.*)/;
     my @tags = (
         { pre => '', type => '#', txt => $dots[0] },
-        { pre => '', type => '',  txt => $dots[1] },
+        { pre => '', type => $type,  txt => $dots[1] },
         { pre => '', type => '/', txt => $dots[0] },
     );
     return @tags;
@@ -134,7 +136,7 @@ sub tag_match(@)
 # Returns an escaped string
 sub escape($)
 {
-    my $_ = shift;
+    local $_ = shift;
     s/&/&amp;/g;
     s/"/&quot;/g;
     s/</&lt;/g;
@@ -150,7 +152,7 @@ sub reassemble(@)
     my @tags = @_;
     my $last = pop @tags;
     my $ans = '';
-    my $_;
+    local $_;
     no warnings 'uninitialized';
     $ans .= "$_->{pre}$_->{tab}\{\{$_->{type}$_->{txt}\}\}" foreach (@tags);
     return $ans . $last->{pre};
@@ -316,7 +318,7 @@ sub resolve
                 }
                 elsif ($tag->{txt} =~ /\./)
                 {
-                    my @dots = dottags $tag->{txt};
+                    my @dots = dottags $tag->{txt}, $tag->{type};
                     $txt = $self->resolve(undef, @dots);
                 }
                 else {
@@ -337,6 +339,7 @@ sub resolve
                     }
                 }
                 $txt = "$tag->{tab}$txt" if $tag->{tab};        # replace the indent
+		say qq(Tag Type: "$tag->{type}", txt: $txt);
                 $result .= $tag->{type} ? $txt : escape $txt;
             }
             when('#') {                         # it's a section start
