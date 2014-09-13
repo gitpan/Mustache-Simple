@@ -1,12 +1,12 @@
 # NAME
 
-Mustache::Simple - A simple Mustach Renderer
+Mustache::Simple - A simple Mustache Renderer
 
 See [http://mustache.github.com/](http://mustache.github.com/).
 
 # VERSION
 
-This document describes Mustache::Simple version 1.2.0
+This document describes Mustache::Simple version 1.3.0
 
 # SYNOPSIS
 
@@ -58,6 +58,12 @@ output.
 
 As of version 1.2.0, it has support for nested contexts, for the dot notation
 and for the implicit iterator.
+
+As of version 1.3.0, it will accept a blessed object.  For any `{{item}}`
+where the object has a method called item (as returned by `$object->can`),
+the value will be the return from the method call (with no parameters).
+If `$object->can(item)` returns `undef`, the object will be treated
+as a hash and the value looked up directly. See ["MANAGING OBJECTS"](#managing-objects) below.
 
 ## Rationale
 
@@ -119,14 +125,17 @@ the current value.
     or
         $tache->path([ qw{/some/new/template/path .} ]);
         my $path = $tache->path;    # defaults to '.'
+
 - extension()
 
         $tache->extension('html');
         my $extension = $tache->extension;  # defaults to 'mustache'
+
 - throw()
 
         $tache->throw(1);
         my $throwing = $tache->throw;       # defaults to undef
+
 - partial()
 
         $tache->partial(\&resolve_partials)
@@ -155,7 +164,7 @@ the current value.
         my $html = $tache->render('templatefile', $context);
 
     This is the main entry-point for rendering templates.  It can be passed
-    either a full template or path to a template file.  See ["read\_file"](#read\_file)
+    either a full template or path to a template file.  See ["read\_file"](#read_file)
     for details of how the file is loaded.  It must also be passed a hashref
     containing the main context.
 
@@ -179,7 +188,7 @@ the current value.
 
 The original standard for Mustache was defined at the
 [Mustache Manual](http://mustache.github.io/mustache.5.html)
-and this version of [Mustache::Simple](http://search.cpan.org/perldoc?Mustache::Simple) was designed to comply
+and this version of [Mustache::Simple](https://metacpan.org/pod/Mustache::Simple) was designed to comply
 with just that.  Since then, the standard for Mustache seems to be
 defined by the [Mustache Spec](https://github.com/mustache/spec).
 
@@ -187,6 +196,60 @@ The test suite on this version skips a number of tests
 in the Spec, all of which relate to Decimals or White Space.
 It passes all the other tests. The YAML from the Spec is built
 into the test suite.
+
+# MANAGING OBJECTS
+
+If a blessed object is passed in (at any level) as the context for
+rendering a template, [Mustache::Simple](https://metacpan.org/pod/Mustache::Simple) will check each tag to
+see if it can be called as a method on the object.  To achieve this, it
+calls `can` from [UNIVERSAL](http://perldoc.perl.org/UNIVERSAL.html)
+on the object.  If `$object->can(tag)`
+returns code, this code will be called (with no parameters).  Otherwise,
+if the object is based on an underlying HASH, it will be treated as that
+HASH.  This works well for objects with AUTOLOADed "getters".
+
+For example:
+
+    package Test::Mustache;
+
+    sub new
+    {
+        my $class = shift;
+        my %params = @_;
+        bless \%params, $class;
+    }
+
+    sub name    # Ensure the name starts with a capital
+    {
+        my $self = shift;
+        (my $name = $self->{name}) =~ s/.*/\L\u$&/;
+        return $name;
+    }
+
+    sub AUTOLOAD    # generic getter / setter
+    {
+        my $self = shift;
+        my $value = shift;
+        (my $method = our $AUTOLOAD) =~ s/.*:://;
+        $self->{$method} = $value if defined $value;
+        return $self->{$method};
+    }
+
+    sub DESTROY { }
+
+Using the above object as `$object`, `{{name}}` would call
+`$object->can('name')` which would return a reference to
+the `name` method and thus that method would be called as a
+"getter".  On a call to `{{address}}`, `$object->can` would
+return undef and therefore `$object->{address}` would be
+used.
+
+This is usually what you want as it avoids the call to `$object->AUTOLOAD`
+for each simple lookup.  If, however, you want something different to
+happen, you either need to declare a "Forward Declaration"
+(see [perlsub](http://perldoc.perl.org/perlsub.html))
+or you need to override the object's `can`
+(see [UNIVERSAL](http://perldoc.perl.org/UNIVERSAL.html)).
 
 # BUGS
 
@@ -212,7 +275,7 @@ into the test suite.
     The spec implies that the template `"{{power}} jiggawatts!"` when passed
     `{ power: "1.210" }` should return `"1.21 jiggawatts!"`.  I believe this to
     be wrong and simply a mistake in the YAML of the relevant tests or possibly
-    in [YAML::XS](http://search.cpan.org/perldoc?YAML::XS). I am far from being a YAML expert.
+    in [YAML::XS](https://metacpan.org/pod/YAML::XS). I am far from being a YAML expert.
 
     Clearly `{ power : 1.210 }` would have the desired effect.
 
@@ -225,7 +288,7 @@ Nothing.
 
 # SEE ALSO
 
-[Template::Mustache](http://search.cpan.org/perldoc?Template::Mustache) - a much more complex module that is
+[Template::Mustache](https://metacpan.org/pod/Template::Mustache) - a much more complex module that is
 designed to be subclassed for each template.
 
 # AUTHOR INFORMATION

@@ -2,15 +2,15 @@ package Mustache::Simple;
 
 use strict;
 use warnings;
-use 5.10.0;
+use 5.10.1;
 use utf8;
 use experimental qw(switch);
 
 # Don't forget to change the version in the pod
-our $VERSION = v1.2.3;
+our $VERSION = v1.3.0;
 
 use File::Spec;
-use Mustache::Simple::ContextStack;
+use Mustache::Simple::ContextStack v1.3.0;
 
 use Carp;
 
@@ -22,19 +22,19 @@ use Carp;
 
 =head1 NAME
 
-Mustache::Simple - A simple Mustach Renderer
+Mustache::Simple - A simple Mustache Renderer
 
 See L<http://mustache.github.com/>.
 
 =head1 VERSION
 
-This document describes Mustache::Simple version 1.2.3
+This document describes Mustache::Simple version 1.3.0
 
 =head1 SYNOPSIS
 
 A typical Mustache template:
 
-        my $template = <<EOT;
+    my $template = <<EOT;
     Hello {{name}}
     You have just won ${{value}}!
     {{#in_ca}}
@@ -82,6 +82,13 @@ output.
 
 As of version 1.2.0, it has support for nested contexts, for the dot notation
 and for the implicit iterator.
+
+As of version 1.3.0, it will accept a blessed object.  For any C<{{item}}>
+where the object has a method called item (as returned by C<< $object->can >>),
+the value will be the return from the method call (with no parameters).
+If C<< $object->can(item) >> returns C<undef>, the object will be treated
+as a hash and the value looked up directly. See L</MANAGING OBJECTS> below.
+
 
 =head2 Rationale
 
@@ -329,7 +336,7 @@ sub resolve
                         {
                             my $saved = $self->{delimiters};
                             $self->{delimiters} = [qw({{ }})];
-                            $txt = $self->render(&$txt());
+                            $txt = $self->render($txt->());
                             $self->{delimiters} = $saved;
                         }
                     }
@@ -339,7 +346,6 @@ sub resolve
                     }
                 }
                 $txt = "$tag->{tab}$txt" if $tag->{tab};        # replace the indent
-		say qq(Tag Type: "$tag->{type}", txt: $txt);
                 $result .= $tag->{type} ? $txt : escape $txt;
             }
             when('#') {                         # it's a section start
@@ -630,6 +636,8 @@ sub render
     my $self = shift;
     my ($template, $context) = @_;
     $context = {} unless $context;
+#    say "\$template = $template, ref \$context = ", ref $context;
+#    print Dumper $context;
     $template = $self->read_file($template);
     my ($tags, $tail) = $self->match_template($template);
     # print reassemble(@$tags), $tail; exit;
@@ -649,6 +657,60 @@ The test suite on this version skips a number of tests
 in the Spec, all of which relate to Decimals or White Space.
 It passes all the other tests. The YAML from the Spec is built
 into the test suite.
+
+=head1 MANAGING OBJECTS
+
+If a blessed object is passed in (at any level) as the context for
+rendering a template, L<Mustache::Simple> will check each tag to
+see if it can be called as a method on the object.  To achieve this, it
+calls C<can> from L<UNIVERSAL|http://perldoc.perl.org/UNIVERSAL.html>
+on the object.  If C<< $object->can(tag) >>
+returns code, this code will be called (with no parameters).  Otherwise,
+if the object is based on an underlying HASH, it will be treated as that
+HASH.  This works well for objects with AUTOLOADed "getters".
+
+For example:
+
+    package Test::Mustache;
+
+    sub new
+    {
+        my $class = shift;
+        my %params = @_;
+        bless \%params, $class;
+    }
+
+    sub name    # Ensure the name starts with a capital
+    {
+        my $self = shift;
+        (my $name = $self->{name}) =~ s/.*/\L\u$&/;
+        return $name;
+    }
+
+    sub AUTOLOAD    # generic getter / setter
+    {
+        my $self = shift;
+        my $value = shift;
+        (my $method = our $AUTOLOAD) =~ s/.*:://;
+        $self->{$method} = $value if defined $value;
+        return $self->{$method};
+    }
+
+    sub DESTROY { }
+
+Using the above object as C<$object>, C<{{name}}> would call
+C<< $object->can('name') >> which would return a reference to
+the C<name> method and thus that method would be called as a
+"getter".  On a call to C<{{address}}>, C<< $object->can >> would
+return undef and therefore C<< $object->{address} >> would be
+used.
+
+This is usually what you want as it avoids the call to C<< $object->AUTOLOAD >>
+for each simple lookup.  If, however, you want something different to
+happen, you either need to declare a "Forward Declaration"
+(see L<perlsub|http://perldoc.perl.org/perlsub.html>)
+or you need to override the object's C<can>
+(see L<UNIVERSAL|http://perldoc.perl.org/UNIVERSAL.html>).
 
 =head1 BUGS
 

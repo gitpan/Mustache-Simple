@@ -2,12 +2,17 @@ package Mustache::Simple::ContextStack;
 
 use strict;
 use warnings;
-use 5.10.0;
+use 5.10.1;
 
-our $VERSION = v1.1.0;
+our $VERSION = v1.3.0;
 
+use Scalar::Util qw(blessed reftype);
 use Carp;
 our @CARP_NOT = qw(Mustache::Simple);
+
+#use Data::Dumper;
+#$Data::Dumper::Useqq = 1;
+#$Data::Dumper::Deparse = 1;
 
 sub new
 {
@@ -37,7 +42,12 @@ sub search
     for (my $i = $#$self; $i >= 0; $i--)
     {
 	my $context = $self->[$i];
-	next unless ref $context eq 'HASH';
+        if (blessed $context)
+        {
+            my $meth;
+            return sub { $context->$meth } if $meth = $context->can($element);
+        }
+	next unless reftype $context eq 'HASH';
 	return $context->{$element} if exists $context->{$element};
     }
     return undef;
@@ -46,7 +56,7 @@ sub search
 sub top
 {
     my $self = shift;
-    return $self->[$#$self];
+    return $self->[-1];
 }
 
 1;

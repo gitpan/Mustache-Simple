@@ -1,5 +1,5 @@
 {
-   "abstract" : "A simple Mustach Renderer",
+   "abstract" : "A simple Mustache Renderer",
    "author" : [
       "Cliff Stanford <cpan@may.be>"
    ],
@@ -22,7 +22,9 @@
    "prereqs" : {
       "build" : {
          "requires" : {
-            "Test::More" : "0"
+            "Data::Dumper" : "0",
+            "Test::More" : "0",
+            "YAML::XS" : "0"
          }
       },
       "configure" : {
@@ -32,13 +34,15 @@
       },
       "runtime" : {
          "requires" : {
+            "Carp" : "0",
             "File::Spec" : "0",
+            "Scalar::Util" : "0",
             "YAML::XS" : "0",
             "experimental" : "0.008",
-            "perl" : "5.010000"
+            "perl" : "5.010001"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "v1.2.3"
+   "version" : "v1.3.0"
 }
