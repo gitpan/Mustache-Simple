@@ -7,10 +7,11 @@ use utf8;
 use experimental qw(switch);
 
 # Don't forget to change the version in the pod
-our $VERSION = v1.3.0;
+our $VERSION = v1.3.1;
 
 use File::Spec;
-use Mustache::Simple::ContextStack v1.3.0;
+use Mustache::Simple::ContextStack v1.3.1;
+use Scalar::Util qw( reftype );
 
 use Carp;
 
@@ -374,7 +375,7 @@ sub resolve
                 else {
                     $txt = $self->find($tag->{txt});    # get the entry from the context
                 }
-                given (ref $txt)
+                given (reftype $txt)
                 {
                     when ('ARRAY') {    # an array of hashes (hopefully)
                         $result .= $self->resolve($_, @subtags) foreach @$txt;
@@ -419,7 +420,7 @@ sub resolve
                     $txt = $self->find($tag->{txt});    # get the entry from the context
                 }
                 my $ans = '';
-                given (ref $txt)
+                given (reftype $txt)
                 {
                     when ('ARRAY') {
                         $ans = $self->resolve(undef, @subtags) if @$txt == 0;

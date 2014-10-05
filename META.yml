@@ -26,4 +26,4 @@ requires:
   YAML::XS: '0'
   experimental: '0.008'
   perl: '5.010001'
-version: v1.3.0
+version: v1.3.1
